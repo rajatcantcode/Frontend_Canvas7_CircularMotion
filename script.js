@@ -1,5 +1,4 @@
 import utils from "./utils.js";
-console.log(utils);
 
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
@@ -11,6 +10,18 @@ const mouse = {
   x: innerWidth / 2,
   y: innerHeight / 2,
 };
+// Event Listeners
+addEventListener("mousemove", (event) => {
+  mouse.x = event.clientX;
+  mouse.y = event.clientY;
+});
+
+//Mobile Event listener
+// Mobile functionality
+canvas.addEventListener("touchmove", (e) => {
+  mouse.x = e.touches[0].clientX;
+  mouse.y = e.touches[0].clientY;
+});
 
 const colors = ["#2185C5", "#7ECEFD", "#FFF6E5", "#FF7F66"];
 
@@ -21,25 +32,44 @@ class Particle {
     this.y = y;
     this.radius = radius;
     this.color = color;
-    this.radians = 0;
+    this.radians = Math.random() * Math.PI * 2;
     this.velocity = 0.05;
+    this.distanceFromCenter = utils.randomIntFromRange(50, 120);
+    this.lastMousePosition = {
+      x: x,
+      y: y,
+    };
   }
 
-  draw() {
+  draw(lastPosition) {
     c.beginPath();
-    c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-    c.fillStyle = this.color;
-    c.fill();
+    c.strokeStyle = this.color;
+    c.lineWidth = this.radius;
+    c.moveTo(lastPosition.x, lastPosition.y);
+    c.lineTo(this.x, this.y);
+    c.stroke();
+
     c.closePath();
   }
 
   update() {
+    const lastPosition = { x: this.x, y: this.y };
+    // move poins over time
     this.radians += this.velocity;
-    this.x = this.x + Math.cos(this.radians) * 10;
 
-    this.y = this.y + Math.sin(this.radians) * 10;
+    //drag effect
+    this.lastMousePosition.x += (mouse.x - this.lastMousePosition.x) * 0.05;
+    this.lastMousePosition.y += (mouse.y - this.lastMousePosition.y) * 0.05;
 
-    this.draw();
+    //circular motion
+    this.x =
+      this.lastMousePosition.x +
+      Math.cos(this.radians) * this.distanceFromCenter;
+    this.y =
+      this.lastMousePosition.y +
+      Math.sin(this.radians) * this.distanceFromCenter;
+
+    this.draw(lastPosition);
   }
 }
 
@@ -48,9 +78,11 @@ let particles;
 function init() {
   particles = [];
 
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < 70; i++) {
+    const radius = Math.random() * 4;
+    const color = utils.randomColor(colors);
     particles.push(
-      new Particle(canvas.width / 2, canvas.height / 2, 10, "blue")
+      new Particle(canvas.width / 2, canvas.height / 2, radius, color)
     );
   }
 }
@@ -58,7 +90,10 @@ function init() {
 // Animation Loop
 function animate() {
   requestAnimationFrame(animate);
-  c.clearRect(0, 0, canvas.width, canvas.height);
+  //to show the trail effect
+  //We are drawing rectangle which have a transparency
+  c.fillStyle = "rgba(255,255,255,0.05)";
+  c.fillRect(0, 0, canvas.width, canvas.height);
 
   particles.forEach((particle) => {
     particle.update();
@@ -67,12 +102,6 @@ function animate() {
 
 init();
 animate();
-
-// Event Listeners
-addEventListener("mousemove", (event) => {
-  mouse.x = event.clientX;
-  mouse.y = event.clientY;
-});
 
 //Resize
 addEventListener("resize", () => {
